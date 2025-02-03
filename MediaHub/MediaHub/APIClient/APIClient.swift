@@ -7,6 +7,18 @@
 
 import Foundation
 
+struct FavoriteRequest: Codable {
+    let media_type: String
+    let media_id: Int
+    let favorite: Bool
+}
+
+struct FavoriteResponse: Codable {
+    let success: Bool
+    let status_code: Int
+    let status_message: String
+}
+
 // MARK: - Estructura para la API
 struct APIClient {
     
@@ -41,4 +53,34 @@ struct APIClient {
 
         return data
     }
+    
+    static func addToFavorites(mediaId: Int, mediaType: String, isFavorite: Bool) async throws -> Bool {
+            let url = URL(string: "https://api.themoviedb.org/3/account/21727466/favorite")!
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.allHTTPHeaderFields = [
+                "accept": "application/json",
+                "content-type": "application/json",
+                "Authorization": apiKey
+            ]
+
+            let body: [String: Any] = [
+                "media_type": mediaType,
+                "media_id": mediaId,
+                "favorite": isFavorite
+            ]
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+            let (data, response) = try await URLSession.shared.data(for: request)
+
+            let decodedResponse = try JSONDecoder().decode(FavoriteResponse.self, from: data)
+
+            if decodedResponse.success && (decodedResponse.status_code == 1 || decodedResponse.status_code == 12) {
+                print("✅ Successfully updated favorite status: \(decodedResponse.status_message)")
+                return true
+            } else {
+                print("❌ Failed to update favorites: \(decodedResponse.status_message)")
+                return false
+            }
+        }
 }

@@ -23,7 +23,7 @@ class MediaViewModel: ObservableObject {
     @Published var upcomingAll: [any Media] = []
     @Published var airingTodayShows: [any Media] = []
     @Published var favoritesAll: [any Media] = []
-    @Published var mediaDetails: (any Media)?
+    @Published var mediaDetails: (any Media)? = nil
     
     
     private let query = [

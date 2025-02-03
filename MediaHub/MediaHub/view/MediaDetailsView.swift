@@ -11,9 +11,10 @@ struct MediaDetailsView: View {
     let id: Int
     let mediaType: String
     @StateObject var viewModel: MediaViewModel = MediaViewModel()
+    @State var isFavorite: Bool = false
     
     var body: some View {
-        ScrollView {
+        ScrollView (showsIndicators: false) {
             VStack(alignment: .leading, spacing: 16) {
                 if let details = viewModel.mediaDetails {
                     
@@ -25,15 +26,58 @@ struct MediaDetailsView: View {
                         .padding(.horizontal)
                     
                     // MARK: - Backdrop Image
-                    AsyncImage(url: URL(string: "https://image.tmdb.org/t/p/w500\(details.backdropPath ?? "")")) { image in
-                        image.resizable()
-                            .scaledToFit()
-                            .shadow(color: .gray, radius: 4)
-                    } placeholder: {
-                        Color.gray
-                            .overlay(ProgressView())
+                    ZStack{
+                        AsyncImage(url: URL(string: "https://image.tmdb.org/t/p/w500\(details.backdropPath ?? "")")) { image in
+                            image.resizable()
+                                .scaledToFit()
+                                .shadow(color: .gray, radius: 4)
+                        } placeholder: {
+                            Color.gray
+                                .overlay(ProgressView())
+                        }
+                        .frame(maxWidth: .infinity)
+                        HStack {
+                            Spacer()
+                            VStack {
+                                Spacer()
+//                                Button(action: {
+//                                    print("Button Tapped!")
+//                                }) {
+//                                    Image(systemName: "plus")
+//                                        .resizable()
+//                                        .frame(width: 10, height: 10)
+//                                        .foregroundColor(.white)
+//                                        .padding(10)
+//                                        .background(
+//                                            Circle()
+//                                                .fill(Color.red)
+//                                                .shadow(color: .gray.opacity(0.4), radius: 4, x: 0, y: 3)
+//                                        )
+//                                }
+                                
+                                Button(action: {
+                                    Task {
+                                        let result = try await APIClient.addToFavorites(mediaId: id, mediaType: mediaType, isFavorite: true)
+                                        
+                                    }
+                                }) {
+                                    Image(systemName: "star")
+                                        .resizable()
+                                        .frame(width: 10, height: 10)
+                                        .foregroundColor(.white)
+                                        .padding(10)
+                                        .background(
+                                            Circle()
+                                                .fill(Color.red)
+                                                .shadow(color: .gray.opacity(0.4), radius: 4, x: 0, y: 3)
+                                        )
+                                }
+                                .padding(.horizontal, 15)
+                                .padding(.bottom)
+                            }
+                        }
+                        
                     }
-                    .frame(maxWidth: .infinity)
                     
                     // MARK: - Movie / TV Show Info
                     VStack(alignment: .leading, spacing: 10) {
@@ -154,6 +198,7 @@ struct MediaDetailsView: View {
         }
         .onAppear {
             viewModel.loadMediaById(id: id, mediaType: mediaType)
+            isFavorite = viewModel.favoritesAll.contains {$0.id == id}
         }
     }
     
@@ -179,5 +224,5 @@ struct MediaDetailsView: View {
 }
 
 #Preview {
-    MediaDetailsView(id: 226636, mediaType: "tv")
+    MediaDetailsView(id: 996821, mediaType: "movie")
 }

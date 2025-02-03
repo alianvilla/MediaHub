@@ -20,10 +20,16 @@ struct FavoritesView: View {
                         .padding()
                     Spacer()
                 } else {
-                    List {
-                        ForEach(viewModel.favoritesAll, id: \.id) { media in
+                    ScrollView {
+                        LazyVGrid(columns: [
+                            GridItem(.flexible(), spacing: 10),  // Column 1
+                            GridItem(.flexible(), spacing: 10)   // Column 2
+                        ], spacing: 16) { // Row spacing
+                            ForEach(viewModel.favoritesAll, id: \.id) { media in
                                 MediaCardView(media: media)
+                            }
                         }
+                        .padding()
                     }
                 }
             }
