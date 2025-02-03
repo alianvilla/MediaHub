@@ -8,7 +8,15 @@
 import Foundation
 
 struct Movie: Media {
-    var mediaType: String?
+    var status: String?
+    
+    
+    var genres: [Genre]?
+    var originCountry: [String]?
+    var originalLanguage: String?
+    var productionCompanies: [ProductionCompany]?
+    var runtime: Int?
+    var mediaType: String? = "movie"
     let id: Int
     let title: String
     let overview: String
@@ -20,13 +28,16 @@ struct Movie: Media {
     let voteCount: Int
     
     enum CodingKeys: String, CodingKey {
-        case id, title, overview, popularity
+        case id, title, overview, popularity, genres, runtime, status
         case releaseDate = "release_date"
         case posterPath = "poster_path"
         case backdropPath = "backdrop_path"
         case voteAverage = "vote_average"
         case voteCount = "vote_count"
         case mediaType = "media_type"
+        case originCountry = "origin_country"
+        case originalLanguage = "original_language"
+        case productionCompanies = "production_companies"
     }
 }
 

@@ -22,6 +22,8 @@ struct ShowsView: View {
                     // MARK: Popular Shows Section
                     SectionView(title: "Popular", medias: viewModel.showsPopular)
                     
+                    SectionView(title: "Airing today", medias: viewModel.airingTodayShows)
+                    
                     // MARK: Genre-Based Shows
                     if viewModel.showsByGenre.isEmpty {
                         LoadingView()
@@ -40,6 +42,7 @@ struct ShowsView: View {
                 viewModel.loadTrendingShows()
                 viewModel.loadPopularShows()
                 viewModel.loadGenreShows()
+                viewModel.loadAiringTodayShows()
             }
             
                 

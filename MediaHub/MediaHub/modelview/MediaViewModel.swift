@@ -18,6 +18,13 @@ class MediaViewModel: ObservableObject {
     @Published var moviesByGenre: [[Movie]] = []
     @Published var genreTvShows: [Genre] = []
     @Published var genreMovies: [Genre] = []
+    @Published var allNowPlaying: [any Media] = []
+    @Published var topRatedAll: [any Media] = []
+    @Published var upcomingAll: [any Media] = []
+    @Published var airingTodayShows: [any Media] = []
+    @Published var favoritesAll: [any Media] = []
+    @Published var mediaDetails: (any Media)?
+    
     
     private let query = [
         URLQueryItem(name: "language", value: "en-US")
@@ -60,7 +67,12 @@ class MediaViewModel: ObservableObject {
                             
                             let decodedResponse = try JSONDecoder().decode(MediaResponse<TVShow>.self, from: data)
                             
-                            return (genre.id, decodedResponse.results)
+                            return (genre.id, decodedResponse.results.map { show in
+                                var modifiedShow = show
+                                modifiedShow.mediaType = "tv"
+                                return modifiedShow
+                                
+                            })
                             
                         } catch {
                             print("❌ Error fetching shows for genre \(genre.name): \(error.localizedDescription)")
@@ -91,7 +103,11 @@ class MediaViewModel: ObservableObject {
                 let decodedResponse = try JSONDecoder().decode(MediaResponse<TVShow>.self, from: data)
                 
                 DispatchQueue.main.async {
-                    self.showsTrending = decodedResponse.results
+                    self.showsTrending = decodedResponse.results.map { show in
+                        var modifiedShow = show
+                        modifiedShow.mediaType = "tv"
+                        return modifiedShow
+                    }
                 }
                 
             } catch {
@@ -111,7 +127,11 @@ class MediaViewModel: ObservableObject {
                 let decodedResponse = try JSONDecoder().decode(MediaResponse<TVShow>.self, from: data)
                 
                 DispatchQueue.main.async {
-                    self.showsPopular = decodedResponse.results
+                    self.showsPopular = decodedResponse.results.map { show in
+                        var modifiedShow = show
+                        modifiedShow.mediaType = "tv"
+                        return modifiedShow
+                    }
                 }
                 
             } catch {
@@ -160,7 +180,12 @@ class MediaViewModel: ObservableObject {
                             
                             let decodedResponse = try JSONDecoder().decode(MediaResponse<Movie>.self, from: data)
                             
-                            return (genre.id, decodedResponse.results)
+                            return (genre.id, decodedResponse.results.map { show in
+                                var modifiedShow = show
+                                modifiedShow.mediaType = "movie"
+                                return modifiedShow
+                                
+                            })
                             
                         } catch {
                             print("❌ Error fetching shows for genre \(genre.name): \(error.localizedDescription)")
@@ -211,7 +236,11 @@ class MediaViewModel: ObservableObject {
                 let decodedResponse = try JSONDecoder().decode(MediaResponse<Movie>.self, from: data)
                 
                 DispatchQueue.main.async {
-                    self.moviesPopular = decodedResponse.results
+                    self.moviesPopular = decodedResponse.results.map { show in
+                        var modifiedShow = show
+                        modifiedShow.mediaType = "movie"
+                        return modifiedShow
+                    }
                 }
                 
             } catch {
@@ -262,6 +291,232 @@ class MediaViewModel: ObservableObject {
                 }
             }
     }
+
+//    MARK: Fetch now playing ALL
+    func loadNowPlayingAll() {
+        Task {
+                await withTaskGroup(of: [any Media].self) { group in
+                    // Fetch Now Playing movies
+                    group.addTask {
+                        do {
+                            let data = try await APIClient.fetchData(from: "movie/now_playing", queryItems: self.query)
+                            let decodedResponse = try JSONDecoder().decode(MediaResponse<Movie>.self, from: data)
+                            return decodedResponse.results.map { show in
+                                var modifiedShow = show
+                                modifiedShow.mediaType = "movie"
+                                return modifiedShow
+                            }
+                        } catch {
+                            print("❌ Error fetching trending movies: \(error.localizedDescription)")
+                            return []
+                        }
+                    }
+                    
+                    // Fetch Trending TV Shows
+                    group.addTask {
+                        do {
+                            let data = try await APIClient.fetchData(from: "tv/on_the_air", queryItems: self.query)
+                            let decodedResponse = try JSONDecoder().decode(MediaResponse<TVShow>.self, from: data)
+                            return decodedResponse.results.map { show in
+                                var modifiedShow = show
+                                modifiedShow.mediaType = "tv"
+                                return modifiedShow
+                            }
+                        } catch {
+                            print("❌ Error fetching trending shows: \(error.localizedDescription)")
+                            return []
+                        }
+                    }
+                    
+                    var combinedNowPlaying: [any Media] = []
+                    
+                    for await results in group {
+                        combinedNowPlaying.append(contentsOf: results)
+                    }
+                    
+                    combinedNowPlaying.shuffle()
+                    self.allNowPlaying = combinedNowPlaying
+                }
+            }
+    }
+    
+//    MARK: Fetch Top Rated All
+    func loadTopRatedAll() {
+        Task {
+                await withTaskGroup(of: [any Media].self) { group in
+                    // Fetch Now Playing movies
+                    group.addTask {
+                        do {
+                            let data = try await APIClient.fetchData(from: "/movie/top_rated", queryItems: self.query)
+                            let decodedResponse = try JSONDecoder().decode(MediaResponse<Movie>.self, from: data)
+                            return decodedResponse.results.map { show in
+                                var modifiedShow = show
+                                modifiedShow.mediaType = "movie"
+                                return modifiedShow
+                            }
+                        } catch {
+                            print("❌ Error fetching trending movies: \(error.localizedDescription)")
+                            return []
+                        }
+                    }
+                    
+                    // Fetch Trending TV Shows
+                    group.addTask {
+                        do {
+                            let data = try await APIClient.fetchData(from: "tv/top_rated", queryItems: self.query)
+                            let decodedResponse = try JSONDecoder().decode(MediaResponse<TVShow>.self, from: data)
+                            return decodedResponse.results.map { show in
+                                var modifiedShow = show
+                                modifiedShow.mediaType = "tv"
+                                return modifiedShow
+                            }
+                        } catch {
+                            print("❌ Error fetching trending shows: \(error.localizedDescription)")
+                            return []
+                        }
+                    }
+                    
+                    var combinedTopRated: [any Media] = []
+                    
+                    for await results in group {
+                        combinedTopRated.append(contentsOf: results)
+                    }
+                    
+                    combinedTopRated.shuffle()
+                    self.topRatedAll = combinedTopRated
+                }
+            }
+    }
+    
+//    MARK: Fetch Upcoming
+    func loadUpcomingAll() {
+        Task {
+            do {
+                let data = try await APIClient.fetchData(from: "movie/upcoming", queryItems: query)
+                
+                let decodedResponse = try JSONDecoder().decode(MediaResponse<Movie>.self, from: data)
+                
+                DispatchQueue.main.async {
+                    self.upcomingAll = decodedResponse.results.map { show in
+                        var modifiedShow = show
+                        modifiedShow.mediaType = "movie"
+                        return modifiedShow
+                    }
+                }
+                
+            } catch {
+                DispatchQueue.main.async {
+                    self.errorMessage = error.localizedDescription
+                    print("❌ Error fetching popular shows: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
+//    MARK: Fetch Airing Today Shows
+    func loadAiringTodayShows() {
+        Task {
+            do {
+                let data = try await APIClient.fetchData(from: "tv/airing_today", queryItems: query)
+                
+                let decodedResponse = try JSONDecoder().decode(MediaResponse<TVShow>.self, from: data)
+                
+                DispatchQueue.main.async {
+                    self.airingTodayShows = decodedResponse.results.map { show in
+                        var modifiedShow = show
+                        modifiedShow.mediaType = "tv"
+                        return modifiedShow
+                    }
+                }
+                
+            } catch {
+                DispatchQueue.main.async {
+                    self.errorMessage = error.localizedDescription
+                    print("❌ Error fetching popular shows: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+    
+//  MARK: Fetch Media by id and type
+    func loadMediaById(id: Int, mediaType: String) {
+        print("Id: \(id) and \(mediaType)")
+        Task {
+                do {
+                    let data = try await APIClient.fetchData(from: "\(mediaType)/\(id)", queryItems: query)
+                    
+                    DispatchQueue.main.async {
+                        do {
+                            if mediaType == "tv" {
+                                self.mediaDetails = try JSONDecoder().decode(TVShow.self, from: data)
+                            } else if mediaType == "movie" {
+                                self.mediaDetails = try JSONDecoder().decode(Movie.self, from: data)
+                            }
+                        } catch {
+                            print("❌ JSON Decoding Error: \(error)")
+                            self.errorMessage = "Failed to decode media details."
+                        }
+                    
+                    }
+                    
+                } catch {
+                    DispatchQueue.main.async {
+                        self.errorMessage = error.localizedDescription
+                        print("❌ Error fetching media by ID (\(mediaType)): \(error.localizedDescription)")
+                    }
+                }
+            }
+    }
+    
+//    MARK: Fetch Favorites All
+    func loadFavorites() {
+        Task {
+                await withTaskGroup(of: [any Media].self) { group in
+                    // Fetch Now Playing movies
+                    group.addTask {
+                        do {
+                            let data = try await APIClient.fetchData(from: "account/21727466/favorite/movies", queryItems: self.query)
+                            let decodedResponse = try JSONDecoder().decode(MediaResponse<Movie>.self, from: data)
+                            return decodedResponse.results.map { show in
+                                var modifiedShow = show
+                                modifiedShow.mediaType = "movie"
+                                return modifiedShow
+                            }
+                        } catch {
+                            print("❌ Error fetching trending movies: \(error.localizedDescription)")
+                            return []
+                        }
+                    }
+                    
+                    // Fetch Trending TV Shows
+                    group.addTask {
+                        do {
+                            let data = try await APIClient.fetchData(from: "account/21727466/favorite/tv", queryItems: self.query)
+                            let decodedResponse = try JSONDecoder().decode(MediaResponse<TVShow>.self, from: data)
+                            return decodedResponse.results.map { show in
+                                var modifiedShow = show
+                                modifiedShow.mediaType = "tv"
+                                return modifiedShow
+                            }
+                        } catch {
+                            print("❌ Error fetching trending shows: \(error.localizedDescription)")
+                            return []
+                        }
+                    }
+                    
+                    var combinedTopRated: [any Media] = []
+                    
+                    for await results in group {
+                        combinedTopRated.append(contentsOf: results)
+                    }
+                    
+                    combinedTopRated.shuffle()
+                    self.favoritesAll = combinedTopRated
+                }
+            }
+    }
+    
+
     
 }
 

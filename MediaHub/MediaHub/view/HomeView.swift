@@ -16,12 +16,22 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: 20) {
                 
                 SectionView(title: "Trending 🔥", medias: viewModel.allTrending)
+                
+                SectionView(title: "Now Playing", medias: viewModel.allNowPlaying)
+                
+                SectionView(title: "Upcoming Movies", medias: viewModel.upcomingAll)
+                
+                SectionView(title: "Top Rated", medias: viewModel.topRatedAll)
+                
+                
             }
             .onAppear {
                 viewModel.loadTrendingAll()
+                viewModel.loadNowPlayingAll()
+                viewModel.loadTopRatedAll()
+                viewModel.loadUpcomingAll()
             }
         }
-        .padding()
     }
 }
 

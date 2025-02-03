@@ -10,28 +10,31 @@ import SwiftUI
 struct ContentView: View {
     
     var body: some View {
-        TabView{
-            HomeView()
-                .tabItem{
-                    Label("Home", systemImage: "house")
-                }
-            
-            MoviesView()
-                .tabItem{
-                    Label("Movies", systemImage: "movieclapper")
-                }
-            
-            ShowsView()
-                .tabItem{
-                    Label("Shows", systemImage: "play.tv")
-                }
-            
-            Text("Home")
-                .tabItem{
-                    Label("Favorites", systemImage: "star")
-                }
+        NavigationStack{
+            TabView{
+                HomeView()
+                    .tabItem{
+                        Label("Home", systemImage: "house")
+                    }
+                
+                MoviesView()
+                    .tabItem{
+                        Label("Movies", systemImage: "movieclapper")
+                    }
+                
+                ShowsView()
+                    .tabItem{
+                        Label("Shows", systemImage: "play.tv")
+                    }
+                
+                FavoritesView()
+                    .tabItem{
+                        Label("Favorites", systemImage: "star")
+                    }
+            }
+            .tint(.red).opacity(0.8)
         }
-        .tint(.red).opacity(0.8)
+        
     }
 }
 

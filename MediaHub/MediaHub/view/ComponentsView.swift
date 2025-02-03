@@ -23,6 +23,8 @@ struct SectionView: View {
                     LazyHStack(spacing: 12) {
                         ForEach(medias, id: \.id) { media in
                             MediaCardView(media: media)
+                                
+                            
                         }
                     }
                     .padding(.horizontal, 10)
@@ -74,29 +76,34 @@ struct MediaCardView: View {
     let media: any Media
     
     var body: some View {
-        VStack {
-            AsyncImage(url: URL(string: "https://image.tmdb.org/t/p/w200\(media.posterPath ?? "")")) { image in
-                image.resizable()
-                    .scaledToFill()
-            } placeholder: {
-                Color.gray
-                    .overlay(
-                        ProgressView()
-                    )
+        NavigationLink(destination: MediaDetailsView(id: media.id, mediaType: media.mediaType!)) {
+            VStack {
+                AsyncImage(url: URL(string: "https://image.tmdb.org/t/p/w200\(media.posterPath ?? "")")) { image in
+                    image.resizable()
+                        .scaledToFill()
+                } placeholder: {
+                    Color.gray
+                        .overlay(
+                            ProgressView()
+                        )
+                }
+                .frame(width: 150, height: 220)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .shadow(radius: 5)
+                
+                Text(media.title)
+                    .font(.footnote)
+                    .bold()
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.center)
+                    .frame(width: 150)
             }
-            .frame(width: 150, height: 220)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(radius: 5)
-            
-            Text(media.title)
-                .font(.footnote)
-                .bold()
-                .foregroundColor(.primary)
-                .multilineTextAlignment(.center)
-                .frame(width: 150)
+            .contentShape(Rectangle())
         }
     }
+        
 }
+
 
 // MARK: - LoadingView
 struct LoadingView: View {
