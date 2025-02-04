@@ -10,7 +10,7 @@ import SwiftUI
 
 public struct MoviesView: View {
     
-    @StateObject private var viewModel: MediaViewModel = MediaViewModel()
+    @EnvironmentObject var viewModel: MediaViewModel
     
     public var body: some View {
             ScrollView(showsIndicators: false) {

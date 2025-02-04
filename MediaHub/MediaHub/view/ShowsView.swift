@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ShowsView: View {
     
-    @StateObject private var viewModel: MediaViewModel = MediaViewModel()
+    @EnvironmentObject var viewModel: MediaViewModel
     
     var body: some View {
             

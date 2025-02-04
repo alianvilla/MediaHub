@@ -9,6 +9,8 @@ import SwiftUI
 
 struct ContentView: View {
     
+    @StateObject var viewModel: MediaViewModel = MediaViewModel()
+    
     var body: some View {
         NavigationStack{
             TabView{
@@ -34,6 +36,7 @@ struct ContentView: View {
             }
             .tint(.red).opacity(0.8)
         }
+        .environmentObject(viewModel)
         
     }
 }

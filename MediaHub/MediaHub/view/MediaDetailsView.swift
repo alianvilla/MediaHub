@@ -10,8 +10,8 @@ import SwiftUI
 struct MediaDetailsView: View {
     let id: Int
     let mediaType: String
-    @StateObject var viewModel: MediaViewModel = MediaViewModel()
-    @State var isFavorite: Bool = false
+    @EnvironmentObject var viewModel: MediaViewModel
+    @State private var isFavorite: Bool = false
     
     var body: some View {
         ScrollView (showsIndicators: false) {
@@ -27,7 +27,11 @@ struct MediaDetailsView: View {
                     
                     // MARK: - Backdrop Image
                     ZStack{
-                        AsyncImage(url: URL(string: "https://image.tmdb.org/t/p/w500\(details.backdropPath ?? "")")) { image in
+                        AsyncImage(
+                            url: URL(
+                                string: "https://image.tmdb.org/t/p/w500\(details.backdropPath ?? "")"
+                            )
+                        ) { image in
                             image.resizable()
                                 .scaledToFit()
                                 .shadow(color: .gray, radius: 4)
@@ -40,40 +44,36 @@ struct MediaDetailsView: View {
                             Spacer()
                             VStack {
                                 Spacer()
-//                                Button(action: {
-//                                    print("Button Tapped!")
-//                                }) {
-//                                    Image(systemName: "plus")
-//                                        .resizable()
-//                                        .frame(width: 10, height: 10)
-//                                        .foregroundColor(.white)
-//                                        .padding(10)
-//                                        .background(
-//                                            Circle()
-//                                                .fill(Color.red)
-//                                                .shadow(color: .gray.opacity(0.4), radius: 4, x: 0, y: 3)
-//                                        )
-//                                }
                                 
-                                Button(action: {
-                                    Task {
-                                        let result = try await APIClient.addToFavorites(mediaId: id, mediaType: mediaType, isFavorite: true)
+                                Button(
+                                    action: {
+                                        toggleFavorite()
                                         
-                                    }
-                                }) {
-                                    Image(systemName: "star")
+                                    }) {
+                                        Image(
+                                            systemName: isFavorite ? "star.fill" : "star"
+                                        )
                                         .resizable()
-                                        .frame(width: 10, height: 10)
+                                        .frame(width: 25, height: 25)
                                         .foregroundColor(.white)
-                                        .padding(10)
+                                        .padding(12)
                                         .background(
                                             Circle()
-                                                .fill(Color.red)
-                                                .shadow(color: .gray.opacity(0.4), radius: 4, x: 0, y: 3)
+                                                .fill(
+                                                    isFavorite ? Color.yellow : Color.red
+                                                )
+                                                .shadow(
+                                                    color: .gray.opacity(0.4),
+                                                    radius: 4,
+                                                    x: 0,
+                                                    y: 3
+                                                )
                                         )
-                                }
-                                .padding(.horizontal, 15)
-                                .padding(.bottom)
+                                    }
+                                    .padding(.horizontal, 15)
+                                    .padding(
+                                        .bottom
+                                    )
                             }
                         }
                         
@@ -92,7 +92,9 @@ struct MediaDetailsView: View {
                         HStack {
                             Text("⭐ Rating:")
                                 .bold()
-                            Text("\(String(format: "%.1f", details.voteAverage)) / 10")
+                            Text(
+                                "\(String(format: "%.1f", details.voteAverage)) / 10"
+                            )
                         }
                         .font(.subheadline)
                         .foregroundColor(.yellow)
@@ -101,7 +103,9 @@ struct MediaDetailsView: View {
                             HStack {
                                 Text("🎭 Genres:")
                                     .bold()
-                                Text(genres.map { $0.name }.joined(separator: ", "))
+                                Text(
+                                    genres.map { $0.name
+                                    }.joined(separator: ", "))
                             }
                             .font(.subheadline)
                             .foregroundColor(.blue)
@@ -166,16 +170,34 @@ struct MediaDetailsView: View {
                                 ForEach(companies) { company in
                                     VStack {
                                         if let logoPath = company.logoPath {
-                                            AsyncImage(url: URL(string: "https://image.tmdb.org/t/p/w200\(logoPath)")) { image in
+                                            AsyncImage(
+                                                url: URL(
+                                                    string: "https://image.tmdb.org/t/p/w200\(logoPath)"
+                                                )
+                                            ) { image in
                                                 image.resizable()
                                                     .scaledToFit()
-                                                    .frame(width: 80, height: 80)
-                                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                                    .frame(
+                                                        width: 80,
+                                                        height: 80
+                                                    )
+                                                    .clipShape(
+                                                        RoundedRectangle(
+                                                            cornerRadius: 12
+                                                        )
+                                                    )
                                                     .shadow(radius: 2)
                                             } placeholder: {
                                                 Color.gray
-                                                    .frame(width: 80, height: 80)
-                                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                                    .frame(
+                                                        width: 80,
+                                                        height: 80
+                                                    )
+                                                    .clipShape(
+                                                        RoundedRectangle(
+                                                            cornerRadius: 12
+                                                        )
+                                                    )
                                             }
                                         }
                                         Text(company.name)
@@ -197,8 +219,15 @@ struct MediaDetailsView: View {
             .padding(.vertical)
         }
         .onAppear {
-            viewModel.loadMediaById(id: id, mediaType: mediaType)
-            isFavorite = viewModel.favoritesAll.contains {$0.id == id}
+            Task {
+                viewModel.loadMediaById(id: id, mediaType: mediaType)
+                if viewModel.favoriteStatus.isEmpty {
+                    await viewModel.loadFavorites()
+                }
+                DispatchQueue.main.async {
+                    isFavorite = viewModel.isFavorite(mediaId: id)
+                }
+            }
         }
     }
     
@@ -214,15 +243,38 @@ struct MediaDetailsView: View {
         return dateString
     }
     
-    // MARK: - Helper Function for Currency Formatting
-    private func formatCurrency(_ amount: Int) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.locale = Locale(identifier: "en_US")
-        return formatter.string(from: NSNumber(value: amount)) ?? "$\(amount)"
+    // MARK: - Toggle Favorite Status
+    private func toggleFavorite() {
+        Task {
+            do {
+                let newFavoriteStatus = !isFavorite
+                let success = try await APIClient.addToFavorites(
+                    mediaId: id,
+                    mediaType: mediaType,
+                    isFavorite: newFavoriteStatus
+                )
+
+                if success {
+                    DispatchQueue.main.async {
+                        isFavorite = newFavoriteStatus
+                        viewModel.favoriteStatus[id] = newFavoriteStatus
+                    }
+                    await viewModel
+                        .loadFavorites()
+                    DispatchQueue.main.async {
+                        isFavorite = viewModel.isFavorite(mediaId: id)
+                    }
+                } else {
+                    print("❌ Failed to update favorite status")
+                }
+            } catch {
+                print("❌ Failed to update favorite status")
+            }
+        }
     }
 }
 
 #Preview {
-    MediaDetailsView(id: 996821, mediaType: "movie")
+    MediaDetailsView(id: 251691, mediaType: "tv")
+        .environmentObject(MediaViewModel())
 }

@@ -71,7 +71,7 @@ struct APIClient {
             ]
             request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, _) = try await URLSession.shared.data(for: request)
 
             let decodedResponse = try JSONDecoder().decode(FavoriteResponse.self, from: data)
 

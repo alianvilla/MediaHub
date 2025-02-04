@@ -9,7 +9,7 @@ import SwiftUI
 
 struct FavoritesView: View {
     
-    @StateObject var viewModel: MediaViewModel = MediaViewModel()
+    @EnvironmentObject var viewModel: MediaViewModel
     
     var body: some View {
             VStack {
@@ -33,12 +33,16 @@ struct FavoritesView: View {
                     }
                 }
             }
+            .environmentObject(MediaViewModel())
             .onAppear {
-                viewModel.loadFavorites()
+                Task {
+                    await viewModel.loadFavorites()
+                }
             }
+            
         }
 }
 
 #Preview {
-    FavoritesView()
+    FavoritesView().environmentObject(MediaViewModel())
 }

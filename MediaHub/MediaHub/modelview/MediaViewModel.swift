@@ -23,6 +23,7 @@ class MediaViewModel: ObservableObject {
     @Published var upcomingAll: [any Media] = []
     @Published var airingTodayShows: [any Media] = []
     @Published var favoritesAll: [any Media] = []
+    @Published var favoriteStatus: [Int: Bool] = [:]
     @Published var mediaDetails: (any Media)? = nil
     
     
@@ -469,51 +470,75 @@ class MediaViewModel: ObservableObject {
     }
     
 //    MARK: Fetch Favorites All
-    func loadFavorites() {
-        Task {
-                await withTaskGroup(of: [any Media].self) { group in
-                    // Fetch Now Playing movies
-                    group.addTask {
-                        do {
-                            let data = try await APIClient.fetchData(from: "account/21727466/favorite/movies", queryItems: self.query)
-                            let decodedResponse = try JSONDecoder().decode(MediaResponse<Movie>.self, from: data)
-                            return decodedResponse.results.map { show in
-                                var modifiedShow = show
-                                modifiedShow.mediaType = "movie"
-                                return modifiedShow
-                            }
-                        } catch {
-                            print("❌ Error fetching trending movies: \(error.localizedDescription)")
-                            return []
+    func loadFavorites() async {
+            await withTaskGroup(of: [any Media].self) { group in
+                // Fetch Favorite Movies
+                group.addTask {
+                    do {
+                        let data = try await APIClient.fetchData(from: "account/21727466/favorite/movies", queryItems: [])
+                        let decodedResponse = try JSONDecoder().decode(MediaResponse<Movie>.self, from: data)
+                        return decodedResponse.results.map { show in
+                            var modifiedShow = show
+                            modifiedShow.mediaType = "movie"
+                            return modifiedShow
                         }
+                    } catch {
+                        print("❌ Error fetching favorite movies: \(error.localizedDescription)")
+                        return []
                     }
-                    
-                    // Fetch Trending TV Shows
-                    group.addTask {
-                        do {
-                            let data = try await APIClient.fetchData(from: "account/21727466/favorite/tv", queryItems: self.query)
-                            let decodedResponse = try JSONDecoder().decode(MediaResponse<TVShow>.self, from: data)
-                            return decodedResponse.results.map { show in
-                                var modifiedShow = show
-                                modifiedShow.mediaType = "tv"
-                                return modifiedShow
-                            }
-                        } catch {
-                            print("❌ Error fetching trending shows: \(error.localizedDescription)")
-                            return []
+                }
+                
+                // Fetch Favorite TV Shows
+                group.addTask {
+                    do {
+                        let data = try await APIClient.fetchData(from: "account/21727466/favorite/tv", queryItems: [])
+                        let decodedResponse = try JSONDecoder().decode(MediaResponse<TVShow>.self, from: data)
+                        return decodedResponse.results.map { show in
+                            var modifiedShow = show
+                            modifiedShow.mediaType = "tv"
+                            return modifiedShow
                         }
+                    } catch {
+                        print("❌ Error fetching favorite TV shows: \(error.localizedDescription)")
+                        return []
                     }
-                    
-                    var combinedTopRated: [any Media] = []
-                    
-                    for await results in group {
-                        combinedTopRated.append(contentsOf: results)
-                    }
-                    
-                    combinedTopRated.shuffle()
-                    self.favoritesAll = combinedTopRated
+                }
+                
+                var combinedFavorites: [any Media] = []
+                for await results in group {
+                    combinedFavorites.append(contentsOf: results)
+                }
+                
+                combinedFavorites.shuffle()
+                DispatchQueue.main.async {
+                    self.objectWillChange.send()
+                    self.favoritesAll = combinedFavorites
+                    self.favoriteStatus = Dictionary(uniqueKeysWithValues: combinedFavorites.map { ($0.id, true) })
                 }
             }
+        }
+    
+//    MARK: Check if a media is in favorites
+    func isFavorite(mediaId: Int) -> Bool {
+        return favoriteStatus[mediaId] ?? false
+    }
+    
+    func toggleFavorite(mediaId: Int, mediaType: String) async {
+        let newStatus = !(favoriteStatus[mediaId] ?? false)
+        do {
+            let success = try await APIClient.addToFavorites(mediaId: mediaId, mediaType: mediaType, isFavorite: newStatus)
+            if success {
+                DispatchQueue.main.async {
+                    self.objectWillChange.send()
+                    self.favoriteStatus[mediaId] = newStatus
+                    Task {
+                        await self.loadFavorites()
+                    }
+                }
+            }
+        } catch {
+            print("❌ Failed to update favorite status")
+        }
     }
     
 

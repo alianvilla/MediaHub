@@ -9,7 +9,7 @@ import SwiftUI
 
 struct HomeView: View {
     
-    @StateObject private var viewModel = MediaViewModel()
+    @EnvironmentObject var viewModel: MediaViewModel
     
     var body: some View {
         ScrollView(showsIndicators: false) {
